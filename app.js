@@ -25,7 +25,7 @@ app.get('/auth', async (req, res) => {
     const doc = await db.collection('users').doc(username).get();
     if (doc.exists) {
         if (await bcrypt.compare(password, doc.data().password)) {
-            res.json({ success: 'true' });
+            res.json(doc.data());
         } else {
             res.json({ success: 'false', reason: 'credentials' });
         }
@@ -55,6 +55,30 @@ app.get('/newUser', async (req, res) => {
         password: hashpw
     });
     res.json({ success: 'true' });
+});
+
+app.get('/newEntry', async (req, res) => {
+    const { username, entryName } = req.query;
+    let tags = JSON.parse(req.query.tags),
+        cash = parseInt(req.query.cash);
+    if (!username || !entryName || !tags || !cash) {
+        res.status(400).json({ success: 'false', reason: 'bad request' });
+        return;
+    }
+    const doc = db.collection('users').doc(username);
+    if (!(await doc.get()).exists) {
+        res.status(400).json({ success: 'false', reason: 'invalid username' });
+        return;
+    }
+    doc.update({
+        entries: firebase.firestore.FieldValue.arrayUnion({
+            desc: entryName,
+            cash,
+            date_added: new Date(),
+            tags
+        })
+    });
+    res.json({ success: true });
 });
 
 app.listen(3000, () => console.log('app listening on port 3000'));

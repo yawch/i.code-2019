@@ -2,7 +2,7 @@
 
 const firebase = require('firebase-admin');
 const express = require('express');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcrypt');  // used for password hashing
 
 // init firebase
 firebase.initializeApp({
@@ -17,7 +17,10 @@ const app = express();
 
 // user authentication route
 app.get('/auth', async (req, res) => {
+    // get info from GET params
     const { username, password } = req.query;
+
+    // check for valid data
     if (!username || !password) {
         res.status(400).json({ success: 'false', reason: 'bad request' });
         return;
@@ -36,6 +39,7 @@ app.get('/auth', async (req, res) => {
 
 // create new user route
 app.get('/newUser', async (req, res) => {
+    // get info from GET params
     const { username, password, goal } = req.query;
     if (!username || !password || !goal) {
         res.status(400).json({ success: 'false', reason: 'bad request' });
@@ -57,10 +61,14 @@ app.get('/newUser', async (req, res) => {
     res.json({ success: 'true' });
 });
 
+// add new entry route
 app.get('/newEntry', async (req, res) => {
-    const { username, entryName } = req.query;
-    let tags = JSON.parse(req.query.tags),
-        cash = parseInt(req.query.cash);
+    // get info from GET params
+    const { username, entryName } = req.query,
+          tags = JSON.parse(req.query.tags),
+          cash = parseInt(req.query.cash);
+    
+    // checking for valid data
     if (!username || !entryName || !tags || !cash) {
         res.status(400).json({ success: 'false', reason: 'bad request' });
         return;
@@ -71,6 +79,7 @@ app.get('/newEntry', async (req, res) => {
         return;
     }
     doc.update({
+        // push on to entries array
         entries: firebase.firestore.FieldValue.arrayUnion({
             desc: entryName,
             cash,

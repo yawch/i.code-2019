@@ -60,5 +60,5 @@ typings/
 # next.js build output
 .next
 
-# secret firebase-related info here
+# secret firebase-related info here uwu
 serviceAccountKey.json

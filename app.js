@@ -1,9 +1,10 @@
 'use strict';
 
-const firebase = require('firebase-admin'),
-      express = require('express'),
-      bcrypt = require('bcrypt');  // used for password hashing
-      //{ CanvasRenderService } = require('chartjs-node-canvas');
+const firebase = require('firebase-admin');
+const express = require('express');
+const bcrypt = require('bcrypt');
+
+const generateGraph = require('./generateGraph');
 
 // init firebase
 firebase.initializeApp({
@@ -65,16 +66,14 @@ app.get('/newUser', async (req, res) => {
 // add new entry route
 app.get('/newEntry', async (req, res) => {
     // get info from GET params
-    const { desc } = req.query,
-          username = req.query.username.slice(1, -1),
-          tags = req.query.tags.split(',').map((el) => el.trim()),
-          cash = parseInt(req.query.cash);
-    if (tags.length === 0) tags = undefined;
-    // checking for valid data
-    if (!username || !cash) {
+    let { desc = '', password, username, tags = [], cash } = req.query;
+    if (!password || !username || !cash) {
         res.status(400).json({ success: false, reason: 'bad request' });
         return;
     }
+    username = username.slice(1, -1);
+    if (tags.length > 0) tags = tags.split(',').map((el) => el.trim());
+    cash = parseInt(cash);
     const doc = db.collection('users').doc(username);
     const getDoc = await doc.get();
     if (!getDoc.exists) {
@@ -86,41 +85,33 @@ app.get('/newEntry', async (req, res) => {
         entries: firebase.firestore.FieldValue.arrayUnion({
             desc,
             cash,
-            date_added: new Date(),
+            date_added: firebase.firestore.FieldValue.serverTimestamp(),
             tags
         })
     });
     res.json({ success: true });
 });
 
-// app.get('/getGraphs', async (req, res) => {
-//     const { username, password } = req.query;
-//     if (!username || !password) {
-//         res.status(400).json({ success: false, reason: 'missing' });
-//         return;
-//     }
-//     const doc = await db.collection('users').doc(username).get();
-//     if (!doc.exists || !(await bcrypt.compare(password, doc.data().password))) {
-//         res.status(403).json({ success: false, reason: 'invalid' });
-//         return;
-//     }
-//     const canvasRenderService = new CanvasRenderService(500, 500, (ChartJS) => {
-//         ChartJS.defaults.global.defaultFontColor = "#fff";
-//         ChartJS.defaults.global.legend.display = false;
-//     });
-//     const dataUrl = await canvasRenderService.renderToDataURL({
-//         type: 'line',
-//         data: {
-//             labels: ['01/19', '02/19', '03/19', '04/19', '05/19', '06/19', '07/19'],
-//             datasets: [{ 
-//                 data: [86, 114, 106, 106, 107, 111, 133, 221],
-//                 borderColor: "#3e95cd",
-//                 fill: false
-//             }]
-//         },
-// });
-//     console.log(dataUrl);
-//     res.send(dataUrl);
-// });
+app.get('/getGraphs', async (req, res) => {
+    const { username, password } = req.query;
+    if (!username || !password) {
+        res.status(400).json({ success: false, reason: 'missing' });
+        return;
+    }
+    const doc = await db.collection('users').doc(username).get();
+    if (!doc.exists || !(await bcrypt.compare(password, doc.data().password))) {
+        res.status(403).json({ success: false, reason: 'invalid' });
+        return;
+    }
+    let c = 0;
+    const labels = [];
+    const data = [];
+    for (const entry of doc.data().entries) {
+        labels.push(`${entry.date_added.toDate().getMonth() + 1}/${entry.date_added.toDate().getFullYear() % 100}`);
+        c += entry.cash;
+        data.push(c);
+    }
+    res.send(await generateGraph(labels, data));
+});
 
 app.listen(3000, () => console.log('app listening on port 3000'));

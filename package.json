@@ -1,0 +1,27 @@
+{
+  "name": "i.code-2019",
+  "version": "1.0.0",
+  "description": "[i.code] 2019 - Team Quasar, building an app that keeps track of your budget",
+  "main": "app.js",
+  "dependencies": {
+    "bcrypt": "^3.0.6",
+    "chart.js": "^2.8.0",
+    "chartjs-node-canvas": "^2.4.0",
+    "express": "^4.17.1",
+    "firebase-admin": "^8.3.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yawch/i.code-2019.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yawch/i.code-2019/issues"
+  },
+  "homepage": "https://github.com/yawch/i.code-2019#readme"
+}

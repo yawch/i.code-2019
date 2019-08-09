@@ -9,7 +9,7 @@ const generateGraph = require('./generateGraph');
 // init firebase
 firebase.initializeApp({
     credential: firebase.credential.cert(require('./serviceAccountKey.json')),
-    databaseURL: 'https://budget-tracker-d6797.firebaseio.com'
+    databaseURL: 'https://budget-tracker-d6797.firebaseio.com',
 });
 
 const db = firebase.firestore();
@@ -27,10 +27,13 @@ app.get('/auth', async (req, res) => {
         res.status(400).json({ success: false, reason: 'bad request' });
         return;
     }
-    const doc = await db.collection('users').doc(username).get();
+    const doc = await db
+        .collection('users')
+        .doc(username)
+        .get();
     if (doc.exists) {
         if (await bcrypt.compare(password, doc.data().password)) {
-            res.send(username);
+            res.json(username);
         } else {
             res.json({ success: false, reason: 'credentials' });
         }
@@ -58,16 +61,16 @@ app.get('/newUser', async (req, res) => {
         current_cash: 0,
         entries: [],
         goal: parseInt(goal),
-        password: hashpw
+        password: hashpw,
     });
-    res.json(username);
+    res.status(200).json({ username, password });
 });
 
 // add new entry route
 app.get('/newEntry', async (req, res) => {
     // get info from GET params
-    let { desc = '', password, username, tags = [], cash } = req.query;
-    if (!password || !username || !cash) {
+    let { desc = '', username, tags = [], cash } = req.query;
+    if (!username || !cash) {
         res.status(400).json({ success: false, reason: 'bad request' });
         return;
     }
@@ -85,33 +88,40 @@ app.get('/newEntry', async (req, res) => {
         entries: firebase.firestore.FieldValue.arrayUnion({
             desc,
             cash,
-            date_added: firebase.firestore.FieldValue.serverTimestamp(),
-            tags
-        })
+            date_added: new Date(),
+            tags,
+        }),
     });
-    res.json({ success: true });
+    res.status(200).json({ success: true });
 });
 
 app.get('/getGraphs', async (req, res) => {
-    const { username, password } = req.query;
-    if (!username || !password) {
+    let { username } = req.query;
+    if (!username) {
         res.status(400).json({ success: false, reason: 'missing' });
         return;
     }
-    const doc = await db.collection('users').doc(username).get();
-    if (!doc.exists || !(await bcrypt.compare(password, doc.data().password))) {
-        res.status(403).json({ success: false, reason: 'invalid' });
+    username = username.slice(1, -1);
+    const doc = await db
+        .collection('users')
+        .doc(username)
+        .get();
+    if (!doc.exists) {
+        res.status(403).json({ success: false, reason: 'invalid username' });
         return;
     }
     let c = 0;
     const labels = [];
     const data = [];
     for (const entry of doc.data().entries) {
-        labels.push(`${entry.date_added.toDate().getMonth() + 1}/${entry.date_added.toDate().getFullYear() % 100}`);
+        labels.push(
+            `${entry.date_added.toDate().getMonth() +
+                1}/${entry.date_added.toDate().getFullYear() % 100}`
+        );
         c += entry.cash;
         data.push(c);
     }
-    res.send(await generateGraph(labels, data));
+    res.status(200).send(generateGraph(labels, data));
 });
 
 app.listen(3000, () => console.log('app listening on port 3000'));

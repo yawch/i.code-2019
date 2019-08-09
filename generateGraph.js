@@ -1,20 +1,14 @@
-const { CanvasRenderService } = require('chartjs-node-canvas');
-
-module.exports = async (labels, data) => {
-    const width = 400;
-    const height = 400;
-    const configuration = {
+module.exports = (labels, data) => {
+    let configstr = `
+    {
         type: 'line',
         data: {
-            labels,
+            labels: [${labels.map((label) => `'${label}'`)}],
             datasets: [{
-                data,
-                label: 'Your Progress',
-                borderColor: '#3e95cd',
-                fill: false
+                data:[${data}],
+                label:'Progress',
             }]
         }
-    }
-    const canvasRenderService = new CanvasRenderService(width, height, (ChartJS) => { });
-    return await canvasRenderService.renderToDataURL(configuration);
-}
+    }`;
+    return `https://quickchart.io/chart?c=${configstr.replace(/\s/g, '')}`;
+};

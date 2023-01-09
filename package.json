@@ -6,7 +6,7 @@
   "dependencies": {
     "bcrypt": "^3.0.6",
     "express": "^4.17.1",
-    "firebase-admin": "^8.3.0"
+    "firebase-admin": "^11.4.1"
   },
   "devDependencies": {},
   "scripts": {
